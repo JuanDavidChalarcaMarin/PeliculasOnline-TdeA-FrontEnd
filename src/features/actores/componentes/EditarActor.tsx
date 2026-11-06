@@ -1,34 +1,50 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router"
+import { useNavigate, useParams } from "react-router";
+import type { SubmitHandler } from "react-hook-form";
+import type { AxiosError } from "axios";
+import type Actor from "../modelos/Actor.model";
 import type ActorCreacion from "../modelos/ActorCreacion.model";
 import FormularioActor from "./FormularioActor";
 import Cargando from "../../../componentes/Cargando";
-import type { SubmitHandler } from "react-hook-form";
+import clienteAPI from "../../../api/clienteAxios";
+import { extraerErrores } from "../../../utilidades/extraerErrores";
+import convertirActorAFormData from "../utilidades/convertirActorAFormData";
 
 export default function EditarActor() {
-
     const { id } = useParams();
-
-    const [modelo, setModelo] = useState<ActorCreacion | undefined>(undefined);
+    const navigate = useNavigate();
+    const [modelo, setModelo] = useState<ActorCreacion>();
+    const [errores, setErrores] = useState<string[]>([]);
 
     useEffect(() => {
-        const timerId = setTimeout(() => {
-            setModelo({ nombre: 'Tom ' + id, fechaNacimiento: '2022-11-23', foto: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Tom_Holland_by_Gage_Skidmore.jpg/800px-Tom_Holland_by_Gage_Skidmore.jpg' })
-        }, 1000);
+        clienteAPI.get<Actor>(`/actores/${id}`)
+            .then(res => setModelo({
+                nombre: res.data.nombre,
+                fechaNacimiento: res.data.fechaNacimiento,
+                foto: res.data.foto
+            }))
+            .catch(() => navigate('/actores'));
+    }, [id, navigate]);
 
-        return () => clearTimeout(timerId);
-    }, [id])
-
-    const onSubmit: SubmitHandler<ActorCreacion> = async (data) => {
-        console.log('editando actor...');
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        console.log(data);
-    }
+    const onSubmit: SubmitHandler<ActorCreacion> = async data => {
+        try {
+            setErrores([]);
+            const formData = convertirActorAFormData(data);
+            await clienteAPI.put(`/actores/${id}`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            navigate('/actores');
+        } catch (err) {
+            setErrores(extraerErrores(err as AxiosError));
+        }
+    };
 
     return (
         <>
             <h3>Editar Actor</h3>
-            {modelo ? <FormularioActor modelo={modelo} onSubmit={onSubmit} /> : <Cargando />}
+            {modelo
+                ? <FormularioActor modelo={modelo} onSubmit={onSubmit} errores={errores} />
+                : <Cargando />}
         </>
-    )
+    );
 }

@@ -16,7 +16,7 @@ export default function FormularioCine(props: FormularioCineProps) {
         = useForm<CineCreacion>({
             resolver: yupResolver(reglasDeValidacion),
             mode: 'onChange',
-            defaultValues: props.modelo ?? { nombre: '', latitud: undefined as any, longitud: undefined as any }
+            defaultValues: props.modelo ?? { nombre: '', latitud: undefined, longitud: undefined }
         });
 
     const latitud = watch('latitud');
