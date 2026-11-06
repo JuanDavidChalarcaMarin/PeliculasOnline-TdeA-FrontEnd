@@ -2,5 +2,8 @@ bin/
 obj/
 .vs/
 .idea/
-
+.github
+dist/
+node_modules/
+package-lock.json
 # .env

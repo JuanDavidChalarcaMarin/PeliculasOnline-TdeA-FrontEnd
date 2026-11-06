@@ -1,31 +1,43 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router"
+import { useNavigate, useParams } from "react-router";
+import type { SubmitHandler } from "react-hook-form";
+import type { AxiosError } from "axios";
 import type CineCreacion from "../modelos/CineCreacion.model";
 import FormularioCine from "./FormularioCine";
-import type { SubmitHandler } from "react-hook-form";
 import Cargando from "../../../componentes/Cargando";
+import { extraerErrores } from "../../../utilidades/extraerErrores";
+import { obtenerCinePorId, actualizarCine } from "../servicios/cinesServicio";
 
 export default function EditarCine() {
-
     const { id } = useParams();
+    const navigate = useNavigate();
     const [modelo, setModelo] = useState<CineCreacion | undefined>(undefined);
+    const [errores, setErrores] = useState<string[]>([]);
 
     useEffect(() => {
-        setTimeout(() => {
-            setModelo({nombre: 'Agora Mall Edicion', latitud: 18.48347981789517, longitud: -69.9393939971924});
-        }, 1000);
-    }, [id]);
+        if (!id) {
+            navigate('/cines');
+            return;
+        }
+
+        obtenerCinePorId(id)
+            .then(res => setModelo(res.data))
+            .catch(() => navigate('/cines'));
+    }, [id, navigate]);
 
     const onSubmit: SubmitHandler<CineCreacion> = async (data) => {
-            console.log('editar el cine....');
-            await new Promise(resolve => setTimeout(resolve, 500));
-            console.log(data);
+        try {
+            await actualizarCine(id as string, data);
+            navigate('/cines');
+        } catch (err) {
+            setErrores(extraerErrores(err as AxiosError));
         }
+    }
 
     return (
         <>
             <h3>Editar Cine</h3>
-            {modelo ? <FormularioCine modelo={modelo} onSubmit={onSubmit} /> : <Cargando />}
+            {modelo ? <FormularioCine errores={errores} modelo={modelo} onSubmit={onSubmit} /> : <Cargando />}
         </>
     )
 }
